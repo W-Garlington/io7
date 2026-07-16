@@ -126,6 +126,33 @@ widget-window .window-title {
   white-space: nowrap;
 }
 
+/* Editable variant of the window title (editable-title windows). */
+widget-window .window-title-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  padding: 0.1rem 0.25rem;
+  cursor: text;
+}
+
+widget-window .window-title-input:hover { color: var(--text); }
+
+widget-window .window-title-input:focus {
+  outline: 1px solid var(--accent);
+  background: var(--bg);
+  color: var(--text);
+}
+
+widget-window .window-dirty {
+  color: var(--accent);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
 widget-window .window-close {
   background: none;
   border: none;
@@ -216,21 +243,6 @@ doc-editor {
   min-height: 0;
 }
 
-doc-editor .doc-editor-title {
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--border);
-  color: var(--text);
-  font-size: 1rem;
-  font-weight: 600;
-  padding: 0.4rem 0.6rem;
-}
-
-doc-editor .doc-editor-title:focus {
-  outline: none;
-  border-bottom-color: var(--accent);
-}
-
 doc-editor .cm-editor {
   flex: 1;
   min-height: 0;
@@ -238,11 +250,17 @@ doc-editor .cm-editor {
 
 doc-editor .cm-editor.cm-focused { outline: none; }
 
-/* CodeMirror ships a light theme; recolor it to match the app shell. */
-doc-editor .cm-editor { background: var(--bg); color: var(--text); }
-doc-editor .cm-gutters { background: var(--bg-panel); color: var(--text-dim); border-right: 1px solid var(--border); }
-doc-editor .cm-activeLine { background: rgba(255, 255, 255, 0.04); }
-doc-editor .cm-activeLineGutter { background: transparent; color: var(--text); }
-doc-editor .cm-cursor { border-left-color: var(--text); }
+/* CodeMirror ships a light theme; recolor it to match the app shell.
+   CM injects its theme with generated scoped classes whose specificity
+   beats ours, so these overrides need !important to win. */
+doc-editor .cm-editor { background: var(--bg) !important; color: var(--text) !important; }
+doc-editor .cm-gutters {
+  background: var(--bg) !important;
+  color: #6f7680 !important; /* cool grey line numbers */
+  border-right: 1px solid var(--border) !important;
+}
+doc-editor .cm-activeLine { background: rgba(255, 255, 255, 0.04) !important; }
+doc-editor .cm-activeLineGutter { background: transparent !important; color: #9aa3ad !important; }
+doc-editor .cm-cursor { border-left-color: var(--text) !important; }
 doc-editor .cm-selectionBackground,
 doc-editor .cm-editor ::selection { background: rgba(108, 158, 248, 0.3) !important; }

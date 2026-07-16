@@ -14,7 +14,7 @@ import '/components/doc-list.js';
 import '/components/doc-editor.js';
 import '/components/nav-menu.js';
 
-workspace.register('editor', { title: 'New document', tag: 'doc-editor', width: 640, height: 480 });
+workspace.register('editor', { title: 'New document', tag: 'doc-editor', width: 640, height: 480, editableTitle: true });
 workspace.register('documents', { title: 'Documents', tag: 'doc-list', width: 260, height: 420 });
 
 // Per-editor state: doc-editor element -> {doc: last saved doc, timer}.
@@ -27,20 +27,22 @@ const winOf = (el) => el.closest('widget-window');
 function bindDoc(win, el, doc) {
   win.dataset.docId = doc.id;
   states.set(el, { doc, timer: null });
-  el.setDoc(doc);
-  setWinTitle(el);
+  el.setContent(doc.content);
+  win.setTitle(doc.title);
+  win.setDirty(false);
 }
 
+// The doc's title is edited in the window's title bar, its content in
+// the doc-editor; dirty compares both against the last saved doc.
 function isDirty(el) {
   const st = states.get(el);
-  return st && (el.getTitle() !== st.doc.title || el.getContent() !== st.doc.content);
+  const win = winOf(el);
+  return Boolean(st && win &&
+    (win.getTitle() !== st.doc.title || el.getContent() !== st.doc.content));
 }
 
-// The window title is the saved doc title, with a • while unsaved.
-function setWinTitle(el) {
-  const st = states.get(el);
-  if (!st) return;
-  winOf(el)?.setTitle((st.doc.title || 'Untitled') + (isDirty(el) ? ' •' : ''));
+function updateDirty(el) {
+  winOf(el)?.setDirty(isDirty(el));
 }
 
 async function refreshLists() {
@@ -63,16 +65,20 @@ async function createDoc() {
   const doc = await api.createDoc('Untitled', '');
   const { win, el } = workspace.spawn('editor');
   bindDoc(win, el, doc);
-  el.focusTitle();
+  win.focusTitle();
   refreshLists();
 }
 
 async function save(el) {
   const st = states.get(el);
   if (!st || !isDirty(el)) return;
+  // Read both synchronously up front — the window may be removed (close
+  // flush) before the request resolves.
+  const title = winOf(el).getTitle();
+  const content = el.getContent();
   try {
-    st.doc = await api.updateDoc(st.doc.id, el.getTitle(), el.getContent());
-    setWinTitle(el);
+    st.doc = await api.updateDoc(st.doc.id, title, content);
+    updateDirty(el);
     refreshLists();
   } catch (err) {
     console.error(err); // keeps the • so unsaved state stays visible
@@ -82,7 +88,7 @@ async function save(el) {
 function scheduleSave(el) {
   const st = states.get(el);
   if (!st) return;
-  setWinTitle(el);
+  updateDirty(el);
   clearTimeout(st.timer);
   st.timer = setTimeout(() => save(el), SAVE_DEBOUNCE_MS);
 }
@@ -100,6 +106,12 @@ document.addEventListener('doc-delete', async (ev) => {
 });
 
 document.addEventListener('doc-change', (ev) => scheduleSave(ev.target));
+
+// Title edits in an editor window's title bar save like content edits.
+document.addEventListener('title-change', (ev) => {
+  const el = ev.target.querySelector('doc-editor');
+  if (el) scheduleSave(el);
+});
 
 document.addEventListener('widget-spawn', (ev) => {
   if (ev.detail.name === 'editor') {
@@ -150,8 +162,9 @@ live.on('doc.updated', (ev) => {
   // updatedAt already matches, so they're skipped.
   if (st && ev.doc.updatedAt !== st.doc.updatedAt && !isDirty(el)) {
     st.doc = ev.doc;
-    el.setDoc(ev.doc);
-    setWinTitle(el);
+    el.setContent(ev.doc.content);
+    win.setTitle(ev.doc.title);
+    win.setDirty(false);
   }
 });
 

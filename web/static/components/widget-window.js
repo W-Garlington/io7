@@ -8,10 +8,13 @@
 //     <doc-editor></doc-editor>
 //   </widget-window>
 //
-// Attributes: window-title, x, y, width, height (px), closable
-// Methods:    setTitle(text), bringToFront()
-// Events:     'window-close' — fired when the × of a `closable` window is
-//             clicked; the host decides whether to remove the element.
+// Attributes: window-title, x, y, width, height (px), closable,
+//             editable-title (title bar becomes an input the user can edit)
+// Methods:    setTitle(text), getTitle(), setDirty(on), focusTitle(),
+//             bringToFront()
+// Events:     'window-close'  — fired when the × of a `closable` window is
+//                               clicked; the host decides what to do.
+//             'title-change' {title} — user edited an editable title.
 //
 // Follows the widget contract (see doc-list.js): light DOM, methods down,
 // bubbling CustomEvents up. Dragging clamps so the title bar always stays
@@ -24,21 +27,38 @@ const MIN_WIDTH = 280;
 const MIN_HEIGHT = 160;
 
 class WidgetWindow extends HTMLElement {
-  #titleSpan = null;
+  #titleEl = null;
+  #dirtyDot = null;
 
   connectedCallback() {
     // Idempotent: only build the chrome on first connect.
-    if (this.#titleSpan) return;
+    if (this.#titleEl) return;
 
     const content = [...this.childNodes];
 
-    this.#titleSpan = document.createElement('span');
-    this.#titleSpan.className = 'window-title';
-    this.#titleSpan.textContent = this.getAttribute('window-title') ?? '';
+    if (this.hasAttribute('editable-title')) {
+      this.#titleEl = document.createElement('input');
+      this.#titleEl.className = 'window-title-input';
+      this.#titleEl.placeholder = 'Untitled';
+      this.#titleEl.value = this.getAttribute('window-title') ?? '';
+      // 'input' only fires on user edits, never on setTitle().
+      this.#titleEl.addEventListener('input', () => this.dispatchEvent(
+        new CustomEvent('title-change', { detail: { title: this.#titleEl.value }, bubbles: true })));
+    } else {
+      this.#titleEl = document.createElement('span');
+      this.#titleEl.className = 'window-title';
+      this.#titleEl.textContent = this.getAttribute('window-title') ?? '';
+    }
+
+    this.#dirtyDot = document.createElement('span');
+    this.#dirtyDot.className = 'window-dirty';
+    this.#dirtyDot.textContent = '•';
+    this.#dirtyDot.title = 'Unsaved changes';
+    this.#dirtyDot.hidden = true;
 
     const header = document.createElement('div');
     header.className = 'window-header';
-    header.append(this.#titleSpan);
+    header.append(this.#titleEl, this.#dirtyDot);
 
     if (this.hasAttribute('closable')) {
       const close = document.createElement('button');
@@ -75,7 +95,28 @@ class WidgetWindow extends HTMLElement {
   }
 
   setTitle(text) {
-    this.#titleSpan.textContent = text;
+    if (this.#titleEl instanceof HTMLInputElement) {
+      this.#titleEl.value = text;
+    } else {
+      this.#titleEl.textContent = text;
+    }
+  }
+
+  getTitle() {
+    return this.#titleEl instanceof HTMLInputElement
+      ? this.#titleEl.value
+      : this.#titleEl.textContent;
+  }
+
+  setDirty(on) {
+    this.#dirtyDot.hidden = !on;
+  }
+
+  focusTitle() {
+    if (this.#titleEl instanceof HTMLInputElement) {
+      this.#titleEl.focus();
+      this.#titleEl.select();
+    }
   }
 
   bringToFront() {
@@ -86,7 +127,9 @@ class WidgetWindow extends HTMLElement {
   // pointer-down position plus the geometry captured at drag start.
   #draggable(handle, apply) {
     handle.addEventListener('pointerdown', (ev) => {
-      if (ev.button !== 0 || ev.target.closest('.window-close')) return;
+      // Interactive header controls (title input, close button) must not
+      // start a drag.
+      if (ev.button !== 0 || ev.target.closest('input, button')) return;
       ev.preventDefault();
       const from = { x: ev.clientX, y: ev.clientY };
       const start = {

@@ -51,9 +51,9 @@ Current widgets:
 | Element | File | Methods (down) | Events (up) |
 |---|---|---|---|
 | `<doc-list>` | `components/doc-list.js` | `setDocs(docs)` | `doc-create`, `doc-select {id}`, `doc-delete {id}` |
-| `<doc-editor>` | `components/doc-editor.js` | `setDoc({title, content})`, `getTitle()`, `getContent()`, `focusTitle()` | `doc-change` |
+| `<doc-editor>` | `components/doc-editor.js` | `setContent(content)`, `getContent()` | `doc-change` |
 | `<nav-menu>` | `components/nav-menu.js` | `setItems([{name, title}])` | `widget-spawn {name}` |
-| `<widget-window>` | `components/widget-window.js` | `setTitle(text)`, `bringToFront()` | `window-close` |
+| `<widget-window>` | `components/widget-window.js` | `setTitle(text)`, `getTitle()`, `setDirty(on)`, `focusTitle()`, `bringToFront()` | `window-close`, `title-change {title}` |
 
 ## Document windows
 
@@ -70,10 +70,15 @@ their own floating editor window, tracked by `data-doc-id` on the window.
 - **Deleting** (the per-row `%` button — placeholder glyph) removes the
   doc and closes its window everywhere, including other browser tabs
   (via the `doc.deleted` WebSocket event).
-- **Saving** is per window: each `<doc-editor>` autosaves (debounced)
-  independently; its per-editor state lives in a `WeakMap` in `app.js`.
-  Unsaved state shows as a `•` suffix in the window title. Ctrl-S
-  flushes every dirty editor; closing a window flushes its editor first.
+- **Renaming**: the window title bar *is* the doc's title field — editor
+  windows use widget-window's `editable-title` mode (set via the
+  registry's `editableTitle` flag), which swaps the title span for an
+  input that emits `title-change`. `<doc-editor>` itself is content-only.
+- **Saving** is per window: title (window) + content (editor) autosave
+  (debounced) together; per-editor state lives in a `WeakMap` in
+  `app.js`. Unsaved state shows as a dot next to the title
+  (`setDirty(on)`). Ctrl-S flushes every dirty editor; closing a window
+  flushes its editor first.
 
 ## Floating windows: `<widget-window>`
 
@@ -127,11 +132,15 @@ workspace.register('documents', {
 
 - **Attributes** (read once on connect): `window-title`; `x`, `y`,
   `width`, `height` in px (defaults 24, 24, 520, 360; clamped to fit the
-  workspace); `closable` (presence adds an × button).
-- **Methods**: `setTitle(text)`; `bringToFront()`.
-- **Events**: `window-close` — fired when the × is clicked. The window
+  workspace); `closable` (presence adds an × button); `editable-title`
+  (title bar becomes an input).
+- **Methods**: `setTitle(text)`, `getTitle()`, `setDirty(on)` (shows a
+  dot next to the title), `focusTitle()` (editable titles only),
+  `bringToFront()`.
+- **Events**: `window-close` — fired when the × is clicked; the window
   does **not** remove itself; the host decides (workspace.js removes
   spawned windows; capture-phase listeners can act first).
+  `title-change {title}` — user edited an editable title.
 
 ### How it works (~120 lines, no dependencies)
 

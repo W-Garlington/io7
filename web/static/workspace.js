@@ -5,14 +5,15 @@
 
 import '/components/widget-window.js';
 
-const registry = new Map(); // name -> {title, tag, width, height, singleton}
+const registry = new Map(); // name -> {title, tag, width, height, singleton, editableTitle}
 let cascade = 0;
 
 // register declares a spawnable widget. tag is the custom element to
 // create inside the window. singleton widgets get at most one window —
-// spawning again focuses the existing one.
-export function register(name, { title, tag, width = 520, height = 360, singleton = false }) {
-  registry.set(name, { title, tag, width, height, singleton });
+// spawning again focuses the existing one. editableTitle windows let the
+// user edit the title bar text (they emit 'title-change').
+export function register(name, { title, tag, width = 520, height = 360, singleton = false, editableTitle = false }) {
+  registry.set(name, { title, tag, width, height, singleton, editableTitle });
 }
 
 // widgets lists registered widgets for menus: [{name, title}].
@@ -43,6 +44,7 @@ export function spawn(name) {
   win.dataset.widget = name;
   win.setAttribute('window-title', spec.title);
   win.setAttribute('closable', '');
+  if (spec.editableTitle) win.setAttribute('editable-title', '');
   const step = cascade++ % 8;
   win.setAttribute('x', String(32 + step * 32));
   win.setAttribute('y', String(24 + step * 26));
