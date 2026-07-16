@@ -50,10 +50,30 @@ Current widgets:
 
 | Element | File | Methods (down) | Events (up) |
 |---|---|---|---|
-| `<doc-list>` | `components/doc-list.js` | `setDocs(docs)`, `setActive(id)` | `doc-create`, `doc-select {id}`, `doc-delete {id}` |
-| `<doc-editor>` | `components/doc-editor.js` | `open(content)`, `close()`, `getContent()` | `doc-change` |
+| `<doc-list>` | `components/doc-list.js` | `setDocs(docs)` | `doc-create`, `doc-select {id}`, `doc-delete {id}` |
+| `<doc-editor>` | `components/doc-editor.js` | `setDoc({title, content})`, `getTitle()`, `getContent()`, `focusTitle()` | `doc-change` |
 | `<nav-menu>` | `components/nav-menu.js` | `setItems([{name, title}])` | `widget-spawn {name}` |
 | `<widget-window>` | `components/widget-window.js` | `setTitle(text)`, `bringToFront()` | `window-close` |
+
+## Document windows
+
+The workspace is windows-only (no fixed panes): documents each open in
+their own floating editor window, tracked by `data-doc-id` on the window.
+`app.js` implements the model:
+
+- **Selecting** a doc in a `<doc-list>` opens its window, or focuses the
+  already-open one (never two windows for the same doc — they would
+  fight over saves).
+- **Creating** a doc ("+ New document" in a list, or "New document" in
+  the Widgets menu) creates it via the API and opens a fresh window with
+  the title field focused.
+- **Deleting** (the per-row `%` button — placeholder glyph) removes the
+  doc and closes its window everywhere, including other browser tabs
+  (via the `doc.deleted` WebSocket event).
+- **Saving** is per window: each `<doc-editor>` autosaves (debounced)
+  independently; its per-editor state lives in a `WeakMap` in `app.js`.
+  Unsaved state shows as a `•` suffix in the window title. Ctrl-S
+  flushes every dirty editor; closing a window flushes its editor first.
 
 ## Floating windows: `<widget-window>`
 
@@ -80,11 +100,11 @@ document.getElementById('workspace').append(win);
 windows. `app.js` registers each widget once at boot:
 
 ```js
-workspace.register('editor', {
-  title: 'Editor',      // window title + nav-menu label
-  tag: 'doc-editor',    // custom element created inside the window
-  width: 760, height: 520,
-  singleton: true,      // spawn() focuses the existing window instead
+workspace.register('documents', {
+  title: 'Documents',   // window title + nav-menu label
+  tag: 'doc-list',      // custom element created inside the window
+  width: 260, height: 420,
+  // singleton: true    // would make spawn() focus the existing window
 });
 ```
 
@@ -94,11 +114,12 @@ workspace.register('editor', {
   `<nav-menu>` is populated from it, so **registering a widget is all it
   takes to appear in the "Widgets" dropdown**. The dropdown emits
   `widget-spawn {name}`; `app.js` spawns and then *hydrates* the new
-  instance with current state (e.g. a new `doc-list` gets `setDocs`, a
-  respawned editor re-opens the current document).
+  instance with current state (a new `doc-list` gets `setDocs`). The
+  `editor` registration is special-cased in `app.js`: spawning it
+  creates a new document first (an editor window always edits a doc).
 - Every spawned window has a close (×) button. Closing only removes the
   window; app-level consequences are handled in `app.js` — e.g. closing
-  the editor window flushes any pending save first (a capture-phase
+  an editor window flushes any pending save first (a capture-phase
   `window-close` listener reads the editor before the window's own
   listener removes it).
 

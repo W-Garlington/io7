@@ -23,7 +23,7 @@ body {
 
 /* --- topbar --- */
 
-/* The topbar sits in a stacking context above #layout, so its dropdowns
+/* The topbar sits in a stacking context above #workspace, so its dropdowns
    always paint over floating windows (whose z-indexes grow unbounded). */
 #topbar {
   display: flex;
@@ -80,53 +80,14 @@ nav-menu li:hover { background: var(--bg-hover); }
   color: var(--accent);
 }
 
-#doc-title {
-  flex: 1;
-  max-width: 30rem;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  color: var(--text);
-  font-size: 1rem;
-  padding: 0.25rem 0.5rem;
-}
-
-#doc-title:focus {
-  outline: none;
-  border-color: var(--accent);
-  background: var(--bg);
-}
-
-#save-status {
-  color: var(--text-dim);
-  font-size: 0.8rem;
-  min-width: 5rem;
-  text-align: right;
-}
-
-/* --- layout --- */
-
-#layout {
-  flex: 1;
-  display: flex;
-  min-height: 0;
-  position: relative;
-  z-index: 0; /* stacking context: window z-indexes stay below the topbar */
-}
-
-#sidebar {
-  width: 230px;
-  flex-shrink: 0;
-  background: var(--bg-panel);
-  border-right: 1px solid var(--border);
-  overflow-y: auto;
-}
+/* --- workspace --- */
 
 #workspace {
   flex: 1;
-  min-width: 0;
+  min-height: 0;
   position: relative; /* floating widget-windows position against this */
   overflow: hidden;
+  z-index: 0; /* stacking context: window z-indexes stay below the topbar */
 }
 
 /* --- widget-window (floating widget container) --- */
@@ -225,7 +186,6 @@ doc-list li {
 }
 
 doc-list li:hover { background: var(--bg-hover); }
-doc-list li.active { background: var(--bg-hover); box-shadow: inset 2px 0 0 var(--accent); }
 
 doc-list .doc-title {
   flex: 1;
@@ -256,9 +216,19 @@ doc-editor {
   min-height: 0;
 }
 
-doc-editor .editor-empty {
-  margin: auto;
-  color: var(--text-dim);
+doc-editor .doc-editor-title {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.4rem 0.6rem;
+}
+
+doc-editor .doc-editor-title:focus {
+  outline: none;
+  border-bottom-color: var(--accent);
 }
 
 doc-editor .cm-editor {

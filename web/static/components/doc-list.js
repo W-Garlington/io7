@@ -1,11 +1,12 @@
-// <doc-list> — the document sidebar widget.
+// <doc-list> — the document list widget.
 //
 // Widget contract (all widgets follow this shape):
 //   downward: the host calls methods/properties on the element.
 //   upward:   the element dispatches bubbling CustomEvents; it never
 //             talks to the API or other widgets directly.
+//   connectedCallback must be idempotent (windows re-parent children).
 //
-// Methods: setDocs(docs), setActive(id)
+// Methods: setDocs(docs)
 // Events:  'doc-create', 'doc-select' {id}, 'doc-delete' {id}
 //
 // Renders into light DOM on purpose — one global stylesheet, no per-widget
@@ -13,7 +14,6 @@
 
 class DocList extends HTMLElement {
   #docs = [];
-  #activeId = null;
 
   connectedCallback() {
     this.#render();
@@ -21,11 +21,6 @@ class DocList extends HTMLElement {
 
   setDocs(docs) {
     this.#docs = docs;
-    this.#render();
-  }
-
-  setActive(id) {
-    this.#activeId = id;
     this.#render();
   }
 
@@ -45,7 +40,6 @@ class DocList extends HTMLElement {
     const list = document.createElement('ul');
     for (const doc of this.#docs) {
       const item = document.createElement('li');
-      item.classList.toggle('active', doc.id === this.#activeId);
 
       const title = document.createElement('span');
       title.className = 'doc-title';
@@ -54,7 +48,7 @@ class DocList extends HTMLElement {
 
       const del = document.createElement('button');
       del.className = 'doc-delete';
-      del.textContent = '×';
+      del.textContent = '%'; // placeholder delete glyph for now
       del.title = 'Delete';
       del.onclick = (e) => {
         e.stopPropagation();
