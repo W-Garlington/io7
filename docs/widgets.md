@@ -60,6 +60,13 @@ a centered ~72ch reading measure, and browser spellcheck/autocapitalize
 are on. Tab handling is a DOM `keydown` listener because the vendored
 CodeMirror bundle exports no keymap helpers — basicSetup leaves Tab
 unbound, so the event bubbles out of CM untouched.
+
+Long paragraphs soft-wrap (`EditorView.lineWrapping`). Because CodeMirror
+numbers *logical* lines and shades the whole active logical line, a
+wrapped paragraph used to present as one giant "line" — so the prose
+styling hides the line-number gutter and the active-line highlight
+(`style.css`, doc-editor section). Delete those two rules to get the
+code-pane chrome back.
 | `<nav-menu>` | `components/nav-menu.js` | `setItems([{name, title}])` | `widget-spawn {name}` |
 | `<widget-window>` | `components/widget-window.js` | `setTitle(text)`, `getTitle()`, `setDirty(on)`, `focusTitle()`, `bringToFront()` | `window-close`, `title-change {title}` |
 

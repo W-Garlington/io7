@@ -268,13 +268,11 @@ doc-editor .cm-line { padding: 0 0 0.4em; }
    CM injects its theme with generated scoped classes whose specificity
    beats ours, so these overrides need !important to win. */
 doc-editor .cm-editor { background: var(--bg) !important; color: var(--text) !important; }
-doc-editor .cm-gutters {
-  background: var(--bg) !important;
-  color: #6f7680 !important; /* cool grey line numbers */
-  border-right: 1px solid var(--border) !important;
-}
-doc-editor .cm-activeLine { background: rgba(255, 255, 255, 0.04) !important; }
-doc-editor .cm-activeLineGutter { background: transparent !important; color: #9aa3ad !important; }
+/* Word-like page: no line-number gutter (it numbers logical lines, so a
+   wrapped paragraph reads as "one big line") and no active-line block
+   highlight (it shades the whole wrapped paragraph). */
+doc-editor .cm-gutters { display: none !important; }
+doc-editor .cm-activeLine { background: transparent !important; }
 doc-editor .cm-cursor { border-left-color: var(--text) !important; }
 doc-editor .cm-selectionBackground,
 doc-editor .cm-editor ::selection { background: rgba(108, 158, 248, 0.3) !important; }
