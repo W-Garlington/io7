@@ -256,8 +256,6 @@ doc-editor .cm-content {
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 1.05rem;
   line-height: 1.65;
-  max-width: 72ch;      /* comfortable reading measure */
-  margin: 0 auto;       /* centered "page" inside wide windows */
   padding: 1.25rem 1.5rem;
   tab-size: 6;          /* Tab renders as a Word-like first-line indent */
 }

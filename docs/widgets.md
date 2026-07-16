@@ -55,9 +55,9 @@ Current widgets:
 
 `<doc-editor>` is tuned for prose, not code: Tab inserts an indent
 (Shift+Tab outdents the touched lines), a hard line is a paragraph
-(spacing via `.cm-line` padding), the content column has a serif face and
-a centered ~72ch reading measure, and browser spellcheck/autocapitalize
-are on. Tab handling is a DOM `keydown` listener because the vendored
+(spacing via `.cm-line` padding), the content has a serif face and fills
+the window edge to edge (wrap point tracks window resizes), and browser
+spellcheck/autocapitalize are on. Tab handling is a DOM `keydown` listener because the vendored
 CodeMirror bundle exports no keymap helpers — basicSetup leaves Tab
 unbound, so the event bubbles out of CM untouched.
 
