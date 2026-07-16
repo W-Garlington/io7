@@ -23,6 +23,8 @@ body {
 
 /* --- topbar --- */
 
+/* The topbar sits in a stacking context above #layout, so its dropdowns
+   always paint over floating windows (whose z-indexes grow unbounded). */
 #topbar {
   display: flex;
   align-items: center;
@@ -30,7 +32,48 @@ body {
   padding: 0.4rem 0.75rem;
   background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
 }
+
+/* --- nav-menu widget --- */
+
+nav-menu { position: relative; }
+
+nav-menu summary {
+  list-style: none;
+  cursor: pointer;
+  color: var(--text-dim);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  user-select: none;
+}
+
+nav-menu summary::after { content: ' ▾'; font-size: 0.75em; }
+nav-menu summary:hover { background: var(--bg-hover); color: var(--text); }
+
+nav-menu ul {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin: 4px 0 0;
+  padding: 4px;
+  min-width: 10rem;
+  list-style: none;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+nav-menu li {
+  padding: 0.35rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+nav-menu li:hover { background: var(--bg-hover); }
 
 #logo {
   font-weight: 700;
@@ -67,6 +110,8 @@ body {
   flex: 1;
   display: flex;
   min-height: 0;
+  position: relative;
+  z-index: 0; /* stacking context: window z-indexes stay below the topbar */
 }
 
 #sidebar {
@@ -135,6 +180,7 @@ widget-window .window-body {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: auto; /* widgets taller than the window scroll inside it */
 }
 
 widget-window .window-resize {

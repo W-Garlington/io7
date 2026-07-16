@@ -102,8 +102,8 @@ func TestFrontendServed(t *testing.T) {
 	}
 	var body bytes.Buffer
 	body.ReadFrom(res.Body)
-	if !strings.Contains(body.String(), "<doc-editor>") {
-		t.Error("index.html does not contain the editor element")
+	if !strings.Contains(body.String(), `id="workspace"`) {
+		t.Error("index.html does not contain the workspace element")
 	}
 }
 

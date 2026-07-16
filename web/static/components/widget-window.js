@@ -27,6 +27,9 @@ class WidgetWindow extends HTMLElement {
   #titleSpan = null;
 
   connectedCallback() {
+    // Idempotent: only build the chrome on first connect.
+    if (this.#titleSpan) return;
+
     const content = [...this.childNodes];
 
     this.#titleSpan = document.createElement('span');
@@ -55,8 +58,11 @@ class WidgetWindow extends HTMLElement {
 
     this.style.left = `${Number(this.getAttribute('x') ?? 24)}px`;
     this.style.top = `${Number(this.getAttribute('y') ?? 24)}px`;
-    this.style.width = `${Number(this.getAttribute('width') ?? 520)}px`;
-    this.style.height = `${Number(this.getAttribute('height') ?? 360)}px`;
+    // Clamp the requested geometry so the window starts inside the
+    // workspace even if the attributes ask for more than fits.
+    this.#resizeTo(Number(this.getAttribute('width') ?? 520),
+      Number(this.getAttribute('height') ?? 360));
+    this.#moveTo(this.offsetLeft, this.offsetTop);
 
     const grip = document.createElement('div');
     grip.className = 'window-resize';
@@ -98,16 +104,18 @@ class WidgetWindow extends HTMLElement {
     });
   }
 
+  // Windows are fully contained: they can never move or grow past the
+  // workspace edges.
   #moveTo(x, y) {
     const bounds = this.parentElement;
-    const grab = 48; // px of the window that must remain inside
-    this.style.left = `${clamp(x, grab - this.offsetWidth, bounds.clientWidth - grab)}px`;
-    this.style.top = `${clamp(y, 0, bounds.clientHeight - 32)}px`;
+    this.style.left = `${clamp(x, 0, Math.max(0, bounds.clientWidth - this.offsetWidth))}px`;
+    this.style.top = `${clamp(y, 0, Math.max(0, bounds.clientHeight - this.offsetHeight))}px`;
   }
 
   #resizeTo(w, h) {
-    this.style.width = `${Math.max(w, MIN_WIDTH)}px`;
-    this.style.height = `${Math.max(h, MIN_HEIGHT)}px`;
+    const bounds = this.parentElement;
+    this.style.width = `${clamp(w, MIN_WIDTH, Math.max(MIN_WIDTH, bounds.clientWidth - this.offsetLeft))}px`;
+    this.style.height = `${clamp(h, MIN_HEIGHT, Math.max(MIN_HEIGHT, bounds.clientHeight - this.offsetTop))}px`;
   }
 }
 

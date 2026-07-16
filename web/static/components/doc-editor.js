@@ -12,6 +12,10 @@ class DocEditor extends HTMLElement {
   #applying = false; // true while open() replaces content programmatically
 
   connectedCallback() {
+    // Idempotent: re-parenting (e.g. widget-window moving us into its
+    // body) re-fires this callback; the view must only be built once.
+    if (this.#view) return;
+
     this.#empty = document.createElement('div');
     this.#empty.className = 'editor-empty';
     this.#empty.textContent = 'Select or create a document';

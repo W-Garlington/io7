@@ -31,29 +31,37 @@ to the backend (`api.js` for REST, `live.js` for WebSocket events), and
 pushes results back down into widgets. Adding a feature usually means
 "add an event or method to one widget, handle it in `app.js`".
 
+Two rules that follow from windows spawning and closing at runtime:
+
+- **`connectedCallback` must be idempotent.** `<widget-window>` moves its
+  children into its body container on connect, which disconnects and
+  reconnects them — firing their `connectedCallback` again. Guard with a
+  private field (`if (this.#built) return;` style), or you'll build your
+  widget twice (this was a real bug: two CodeMirror editors in one
+  window).
+- **Don't hold widget references; delegate.** `app.js` listens on
+  `document` (widget events bubble) and looks elements up per use
+  (`document.querySelector('doc-editor')`), so handlers keep working for
+  widgets created after boot, any number of instances, and windows the
+  user has closed. State pushes iterate all instances
+  (`querySelectorAll('doc-list')`).
+
 Current widgets:
 
 | Element | File | Methods (down) | Events (up) |
 |---|---|---|---|
 | `<doc-list>` | `components/doc-list.js` | `setDocs(docs)`, `setActive(id)` | `doc-create`, `doc-select {id}`, `doc-delete {id}` |
 | `<doc-editor>` | `components/doc-editor.js` | `open(content)`, `close()`, `getContent()` | `doc-change` |
+| `<nav-menu>` | `components/nav-menu.js` | `setItems([{name, title}])` | `widget-spawn {name}` |
 | `<widget-window>` | `components/widget-window.js` | `setTitle(text)`, `bringToFront()` | `window-close` |
 
 ## Floating windows: `<widget-window>`
 
 `<widget-window>` is the foundation for floating widgets. It is a generic
 container — it knows nothing about what's inside it. Wrap any widget in
-one and it becomes a movable, resizable window inside `#workspace`:
-
-```html
-<main id="workspace">
-  <widget-window window-title="Editor" x="32" y="24" width="760" height="520">
-    <doc-editor></doc-editor>
-  </widget-window>
-</main>
-```
-
-Or create one dynamically:
+one and it becomes a movable, resizable window inside `#workspace`.
+Windows are normally created through the registry (next section), but the
+element also works standalone:
 
 ```js
 const win = document.createElement('widget-window');
@@ -66,14 +74,43 @@ win.addEventListener('window-close', () => win.remove());
 document.getElementById('workspace').append(win);
 ```
 
+## Spawning windows: the workspace registry
+
+`workspace.js` keeps a registry of spawnable widgets and manages their
+windows. `app.js` registers each widget once at boot:
+
+```js
+workspace.register('editor', {
+  title: 'Editor',      // window title + nav-menu label
+  tag: 'doc-editor',    // custom element created inside the window
+  width: 760, height: 520,
+  singleton: true,      // spawn() focuses the existing window instead
+});
+```
+
+- `workspace.spawn(name)` opens the window (cascaded position, closable,
+  removed from the DOM on close) and returns `{win, el, created}`.
+- `workspace.widgets()` lists registrations for menus — the topbar
+  `<nav-menu>` is populated from it, so **registering a widget is all it
+  takes to appear in the "Widgets" dropdown**. The dropdown emits
+  `widget-spawn {name}`; `app.js` spawns and then *hydrates* the new
+  instance with current state (e.g. a new `doc-list` gets `setDocs`, a
+  respawned editor re-opens the current document).
+- Every spawned window has a close (×) button. Closing only removes the
+  window; app-level consequences are handled in `app.js` — e.g. closing
+  the editor window flushes any pending save first (a capture-phase
+  `window-close` listener reads the editor before the window's own
+  listener removes it).
+
 ### API
 
 - **Attributes** (read once on connect): `window-title`; `x`, `y`,
-  `width`, `height` in px (defaults 24, 24, 520, 360); `closable`
-  (presence adds an × button).
+  `width`, `height` in px (defaults 24, 24, 520, 360; clamped to fit the
+  workspace); `closable` (presence adds an × button).
 - **Methods**: `setTitle(text)`; `bringToFront()`.
 - **Events**: `window-close` — fired when the × is clicked. The window
-  does **not** remove itself; the host decides (hide, remove, confirm…).
+  does **not** remove itself; the host decides (workspace.js removes
+  spawned windows; capture-phase listeners can act first).
 
 ### How it works (~120 lines, no dependencies)
 
@@ -89,9 +126,10 @@ document.getElementById('workspace').append(win);
   records the starting geometry, and applies pointer deltas on
   `pointermove`. CSS `touch-action: none` on both handles keeps touch
   input from scrolling instead.
-- **Move clamping** keeps at least 48px of the title bar inside the
-  workspace, so a window can never be dragged out of reach. Resizing
-  enforces 280×160 minimums.
+- **Windows are fully contained**: moving and resizing are clamped to the
+  workspace edges (and initial geometry is clamped on connect), so a
+  window can never end up out of reach. Resizing enforces 280×160
+  minimums.
 - **Z-order**: a module-level counter; any `pointerdown` inside a window
   raises it above all others. No bookkeeping, monotonically increasing.
 - Styling lives in `style.css` under "widget-window" — components carry
@@ -101,13 +139,14 @@ document.getElementById('workspace').append(win);
 
 1. Create `web/static/components/<name>.js` defining the custom element.
    Follow the contract: methods down, bubbling `CustomEvent`s up, no API
-   calls inside the widget.
+   calls inside the widget — and an idempotent `connectedCallback`.
 2. Add its styles to `style.css` (namespace selectors under the element
    name, e.g. `search-panel .result { … }`).
-3. Import it in `app.js` (`import '/components/<name>.js';`) and wire its
-   events to `api.js`/`live.js` there.
-4. Mount it: either statically in `index.html` wrapped in a
-   `<widget-window>`, or dynamically as in the snippet above.
+3. In `app.js`: import it, `workspace.register('<name>', {title, tag, …})`
+   it, and handle its events with `document.addEventListener` (delegated).
+   Registration alone puts it in the "Widgets" dropdown.
+4. If spawned instances need current state, hydrate them in the
+   `widget-spawn` handler in `app.js`.
 5. If it needs live updates, subscribe via `live.on('<event.type>', cb)` —
    one WebSocket serves all widgets; new event *types* are added on the
    backend (`server/ws.go` `event` struct), never new sockets.
