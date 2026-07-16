@@ -250,6 +250,20 @@ doc-editor .cm-editor {
 
 doc-editor .cm-editor.cm-focused { outline: none; }
 
+/* Prose typography: the editor is a writing surface, not a code pane.
+   A hard line is a paragraph — spacing comes from .cm-line padding. */
+doc-editor .cm-content {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  max-width: 72ch;      /* comfortable reading measure */
+  margin: 0 auto;       /* centered "page" inside wide windows */
+  padding: 1.25rem 1.5rem;
+  tab-size: 6;          /* Tab renders as a Word-like first-line indent */
+}
+
+doc-editor .cm-line { padding: 0 0 0.4em; }
+
 /* CodeMirror ships a light theme; recolor it to match the app shell.
    CM injects its theme with generated scoped classes whose specificity
    beats ours, so these overrides need !important to win. */

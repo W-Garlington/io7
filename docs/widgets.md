@@ -52,6 +52,14 @@ Current widgets:
 |---|---|---|---|
 | `<doc-list>` | `components/doc-list.js` | `setDocs(docs)` | `doc-create`, `doc-select {id}`, `doc-delete {id}` |
 | `<doc-editor>` | `components/doc-editor.js` | `setContent(content)`, `getContent()` | `doc-change` |
+
+`<doc-editor>` is tuned for prose, not code: Tab inserts an indent
+(Shift+Tab outdents the touched lines), a hard line is a paragraph
+(spacing via `.cm-line` padding), the content column has a serif face and
+a centered ~72ch reading measure, and browser spellcheck/autocapitalize
+are on. Tab handling is a DOM `keydown` listener because the vendored
+CodeMirror bundle exports no keymap helpers — basicSetup leaves Tab
+unbound, so the event bubbles out of CM untouched.
 | `<nav-menu>` | `components/nav-menu.js` | `setItems([{name, title}])` | `widget-spawn {name}` |
 | `<widget-window>` | `components/widget-window.js` | `setTitle(text)`, `getTitle()`, `setDirty(on)`, `focusTitle()`, `bringToFront()` | `window-close`, `title-change {title}` |
 
