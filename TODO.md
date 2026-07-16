@@ -27,7 +27,7 @@ Suggested order: graph DB binding → backend skeleton → frontend skeleton →
 
 - [x] Vendor a prebuilt CodeMirror 6 ESM bundle — lives under `web/static/vendor/` (`web/` is its own embed package; `frontend/` stays pure Fyne until decommission) — one-time download, committed, no npm/`node_modules` at runtime or in the dev loop.
 - [x] Static HTML/JS shell served via `go:embed`, vanilla JS + Web Components (no React/Vue/build step).
-- [ ] Hand-rolled floating/docking panel layer (`position: fixed` + z-index + a small drag/resize controller). Don't reach for a docking library (dockview etc.) unless hand-rolling proves genuinely insufficient — see `IOX_PLAN.md` non-goals.
+- [x] Hand-rolled floating panel layer: `<widget-window>` (drag, resize, z-order raise, optional close; ~120 lines, no deps) — see `docs/widgets.md`. Snapping/docking/maximize still open; revisit a docking library only if hand-rolling proves insufficient.
 - [x] Wire the WS connection + basic REST calls from the frontend shell to the backend.
 
 ## 4. Widgets

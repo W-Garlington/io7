@@ -6,9 +6,11 @@ import * as api from '/api.js';
 import * as live from '/live.js';
 import '/components/doc-list.js';
 import '/components/doc-editor.js';
+import '/components/widget-window.js';
 
 const docList = document.querySelector('doc-list');
 const editor = document.querySelector('doc-editor');
+const editorWindow = document.getElementById('editor-window');
 const titleInput = document.getElementById('doc-title');
 const saveStatus = document.getElementById('save-status');
 
@@ -35,6 +37,7 @@ async function openDoc(id) {
   titleInput.value = current.title;
   titleInput.disabled = false;
   editor.open(current.content);
+  editorWindow.setTitle(current.title || 'Untitled');
   docList.setActive(id);
   setStatus('saved');
 }
@@ -44,6 +47,7 @@ function closeDoc() {
   titleInput.value = '';
   titleInput.disabled = true;
   editor.close();
+  editorWindow.setTitle('Editor');
   docList.setActive(null);
   setStatus('');
 }
@@ -53,6 +57,7 @@ async function save() {
   setStatus('saving…');
   try {
     current = await api.updateDoc(current.id, titleInput.value, editor.getContent());
+    editorWindow.setTitle(current.title || 'Untitled');
     setStatus(isDirty() ? 'unsaved' : 'saved');
     refreshList();
   } catch (err) {
@@ -111,6 +116,7 @@ live.on('doc.updated', (ev) => {
   if (current?.id === ev.doc.id && !isDirty() && ev.doc.updatedAt !== current.updatedAt) {
     current = ev.doc;
     titleInput.value = ev.doc.title;
+    editorWindow.setTitle(ev.doc.title || 'Untitled');
     editor.open(ev.doc.content);
   }
 });
