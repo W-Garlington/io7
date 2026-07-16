@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>io7</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header id="topbar">
+    <span id="logo">io7</span>
+    <input id="doc-title" type="text" placeholder="Untitled" disabled>
+    <span id="save-status" title="Save state"></span>
+  </header>
+  <div id="layout">
+    <aside id="sidebar">
+      <doc-list></doc-list>
+    </aside>
+    <main id="content">
+      <doc-editor></doc-editor>
+    </main>
+  </div>
+</body>
+</html>

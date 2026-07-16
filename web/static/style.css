@@ -1,0 +1,166 @@
+:root {
+  --bg: #1e1f22;
+  --bg-panel: #26272b;
+  --bg-hover: #2f3136;
+  --border: #3a3c41;
+  --text: #dcdde1;
+  --text-dim: #8a8d93;
+  --accent: #6c9ef8;
+  font-size: 15px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+}
+
+/* --- topbar --- */
+
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0.75rem;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+}
+
+#logo {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+#doc-title {
+  flex: 1;
+  max-width: 30rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 1rem;
+  padding: 0.25rem 0.5rem;
+}
+
+#doc-title:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--bg);
+}
+
+#save-status {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  min-width: 5rem;
+  text-align: right;
+}
+
+/* --- layout --- */
+
+#layout {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+#sidebar {
+  width: 230px;
+  flex-shrink: 0;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+#content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+/* --- doc-list widget --- */
+
+doc-list { display: block; padding: 0.5rem; }
+
+doc-list .doc-new {
+  width: 100%;
+  padding: 0.4rem;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+doc-list .doc-new:hover { color: var(--text); border-color: var(--text-dim); }
+
+doc-list ul {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+doc-list li {
+  display: flex;
+  align-items: center;
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+doc-list li:hover { background: var(--bg-hover); }
+doc-list li.active { background: var(--bg-hover); box-shadow: inset 2px 0 0 var(--accent); }
+
+doc-list .doc-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+doc-list .doc-delete {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  visibility: hidden;
+  font-size: 1rem;
+}
+
+doc-list li:hover .doc-delete { visibility: visible; }
+doc-list .doc-delete:hover { color: #e06c75; }
+
+/* --- doc-editor widget --- */
+
+doc-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+doc-editor .editor-empty {
+  margin: auto;
+  color: var(--text-dim);
+}
+
+doc-editor .cm-editor {
+  flex: 1;
+  min-height: 0;
+}
+
+doc-editor .cm-editor.cm-focused { outline: none; }
+
+/* CodeMirror ships a light theme; recolor it to match the app shell. */
+doc-editor .cm-editor { background: var(--bg); color: var(--text); }
+doc-editor .cm-gutters { background: var(--bg-panel); color: var(--text-dim); border-right: 1px solid var(--border); }
+doc-editor .cm-activeLine { background: rgba(255, 255, 255, 0.04); }
+doc-editor .cm-activeLineGutter { background: transparent; color: var(--text); }
+doc-editor .cm-cursor { border-left-color: var(--text); }
+doc-editor .cm-selectionBackground,
+doc-editor .cm-editor ::selection { background: rgba(108, 158, 248, 0.3) !important; }

@@ -1,0 +1,3 @@
+
+# LadybugDB native lib — downloaded per machine via go generate ./graphdb
+graphdb/lib-ladybug/
