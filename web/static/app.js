@@ -21,8 +21,34 @@ workspace.register('documents', { title: 'Documents', tag: 'doc-list', width: 26
 const states = new WeakMap();
 const SAVE_DEBOUNCE_MS = 600;
 
+// Link-resolution state pushed down into every doc-editor (see
+// docs/references.md): the docs list doubles as the title index, and
+// refTypes feeds the `type::` autocomplete.
+let docsCache = [];
+let refTypes = [];
+
 const winFor = (docId) => document.querySelector(`widget-window[data-doc-id="${docId}"]`);
 const winOf = (el) => el.closest('widget-window');
+
+// linkPreview backs editor hover previews: the target document's text
+// (its pinned block when the link targets one). Injected into editors so
+// widgets themselves never call the API.
+async function linkPreview(docId, blockId) {
+  const doc = await api.getDoc(docId);
+  let text = doc.content;
+  if (blockId) {
+    const line = text.split('\n').find((l) => l.trimEnd().endsWith('^' + blockId));
+    if (line) text = line;
+  }
+  if (!text) return '(empty)';
+  return text.length > 400 ? text.slice(0, 400) + '…' : text;
+}
+
+function hydrateEditor(el) {
+  el.setDocs(docsCache);
+  el.setRefTypes(refTypes);
+  el.setPreviewProvider(linkPreview);
+}
 
 function bindDoc(win, el, doc) {
   win.dataset.docId = doc.id;
@@ -30,6 +56,7 @@ function bindDoc(win, el, doc) {
   el.setContent(doc.content);
   win.setTitle(doc.title);
   win.setDirty(false);
+  hydrateEditor(el);
 }
 
 // The doc's title is edited in the window's title bar, its content in
@@ -47,7 +74,14 @@ function updateDirty(el) {
 
 async function refreshLists() {
   const docs = await api.listDocs();
+  docsCache = docs;
   for (const list of document.querySelectorAll('doc-list')) list.setDocs(docs);
+  for (const ed of document.querySelectorAll('doc-editor')) ed.setDocs(docs);
+}
+
+async function refreshRefTypes() {
+  refTypes = await api.refTypes();
+  for (const ed of document.querySelectorAll('doc-editor')) ed.setRefTypes(refTypes);
 }
 
 async function openDoc(id) {
@@ -107,6 +141,23 @@ document.addEventListener('doc-delete', async (ev) => {
 
 document.addEventListener('doc-change', (ev) => scheduleSave(ev.target));
 
+// Clicking a wiki link: open the target, or offer to create it (the new
+// doc's title resolves the link everywhere via backend late resolution).
+document.addEventListener('link-click', async (ev) => {
+  const { target, docId } = ev.detail;
+  if (docId) {
+    openDoc(docId);
+    return;
+  }
+  const ambiguous = docsCache.filter((d) => d.title.toLowerCase() === target.toLowerCase()).length > 1;
+  if (ambiguous) return; // several docs share the title — nothing sane to open
+  if (!confirm(`No document titled “${target}”. Create it?`)) return;
+  const doc = await api.createDoc(target, '');
+  const { win, el } = workspace.spawn('editor');
+  bindDoc(win, el, doc);
+  refreshLists();
+});
+
 // Title edits in an editor window's title bar save like content edits.
 document.addEventListener('title-change', (ev) => {
   const el = ev.target.querySelector('doc-editor');
@@ -147,6 +198,9 @@ document.addEventListener('keydown', (ev) => {
 
 live.on('doc.created', refreshLists);
 
+// New relationship types appear when any tab saves a typed link.
+live.on('refs.updated', refreshRefTypes);
+
 live.on('doc.deleted', (ev) => {
   winFor(ev.id)?.remove();
   refreshLists();
@@ -174,3 +228,4 @@ document.querySelector('nav-menu').setItems(workspace.widgets());
 live.connect();
 workspace.spawn('documents');
 refreshLists();
+refreshRefTypes();

@@ -9,7 +9,8 @@ and how to add a new widget. Architecture rationale lives in `IOX_PLAN.md`
 - **No build step.** Everything under `web/static/` is served as-is via
   `go:embed`. Plain ES modules, no npm, no bundler. The only vendored
   artifact is `web/static/vendor/codemirror.js` (a self-contained
-  CodeMirror 6 ESM bundle, fetched once from esm.sh and committed).
+  CodeMirror 6 ESM bundle, committed — see "Vendored CodeMirror bundle"
+  below for the rebuild recipe).
 - **Native Web Components, light DOM.** Widgets are custom elements that
   render into their own light DOM — no shadow roots, so one global
   stylesheet (`style.css`) themes everything.
@@ -51,15 +52,28 @@ Current widgets:
 | Element | File | Methods (down) | Events (up) |
 |---|---|---|---|
 | `<doc-list>` | `components/doc-list.js` | `setDocs(docs)` | `doc-create`, `doc-select {id}`, `doc-delete {id}` |
-| `<doc-editor>` | `components/doc-editor.js` | `setContent(content)`, `getContent()` | `doc-change` |
+| `<doc-editor>` | `components/doc-editor.js` | `setContent(content)`, `getContent()`, `setDocs(docs)`, `setRefTypes(types)`, `setPreviewProvider(fn)` | `doc-change`, `link-click {target, block, type, display, docId}` |
 
 `<doc-editor>` is tuned for prose, not code: Tab inserts an indent
 (Shift+Tab outdents the touched lines), a hard line is a paragraph
 (spacing via `.cm-line` padding), the content has a serif face and fills
 the window edge to edge (wrap point tracks window resizes), and browser
-spellcheck/autocapitalize are on. Tab handling is a DOM `keydown` listener because the vendored
-CodeMirror bundle exports no keymap helpers — basicSetup leaves Tab
-unbound, so the event bubbles out of CM untouched.
+spellcheck/autocapitalize are on. Tab handling is a DOM `keydown`
+listener — basicSetup leaves Tab unbound, so the event bubbles out of CM
+untouched — and Ctrl/Cmd-K ("link to…") rides the same listener.
+
+It also implements the editor side of the references system
+(`docs/references.md`): `[[wiki-links]]` render as clickable pills
+(resolved/unresolved/ambiguous styled distinctly; raw syntax shows while
+the cursor is inside), `[[` opens title + `type::` autocomplete,
+Ctrl/Cmd-K wraps the selection as `[[|selection]]` and opens the target
+picker, clicking emits `link-click` (app.js opens or offers to create
+the target), and hovering a resolved link shows a preview fetched
+through the injected provider — the widget itself still never calls the
+API. Link resolution state arrives via `setDocs` (the same docs array
+`doc-list` gets). The JS link grammar mirrors `store/links.go`; the
+shared contract is `docs/link-grammar-fixtures.json` — change both
+sides together.
 
 Long paragraphs soft-wrap (`EditorView.lineWrapping`). Because CodeMirror
 numbers *logical* lines and shades the whole active logical line, a
@@ -196,6 +210,32 @@ workspace.register('documents', {
    one WebSocket serves all widgets; new event *types* are added on the
    backend (`server/ws.go` `event` struct), never new sockets.
 
+## Vendored CodeMirror bundle
+
+`web/static/vendor/codemirror.js` is a custom single-file ESM bundle
+(the packages listed in its header comment). It exists because the
+original esm.sh `codemirror` bundle only exported
+`EditorView`/`basicSetup`/`minimalSetup`; link decorations,
+autocomplete, and hover previews need more. Rebuild recipe (no npm — a
+one-time vendoring step per `IOX_PLAN.md`):
+
+1. In a scratch dir, download each package tarball from
+   `registry.npmjs.org/<pkg>/latest` (`dist.tarball`) and extract into a
+   `node_modules/<pkg>` layout. Packages: `codemirror`,
+   `@codemirror/{autocomplete,commands,language,lint,search,state,view}`,
+   `@lezer/{common,highlight,lr}`, `style-mod`, `w3c-keyname`, `crelt`,
+   `@marijn/find-cluster-break`.
+2. Write `entry.mjs` re-exporting the needed symbols (see the current
+   bundle's trailing `export{…}` for the list).
+3. `go run github.com/evanw/esbuild/cmd/esbuild@v0.25.5 entry.mjs
+   --bundle --format=esm --minify --outfile=codemirror.js`
+   (esbuild via `go run` — touches no `go.mod`, needs no node).
+4. Prepend the provenance header comment (package versions) and commit.
+
+All packages must land in **one** bundle: CM6 extensions compare facet
+identities, so two copies of `@codemirror/state` (e.g. separate esm.sh
+bundles per package) silently break the editor.
+
 ## Known limitations / future work
 
 - **No geometry persistence** — window positions reset on reload.
@@ -207,5 +247,8 @@ workspace.register('documents', {
   the browser window can leave a window's title bar out of view until
   it's dragged again (re-clamp on `ResizeObserver` would fix this).
 - **Keyboard accessibility** — moving/resizing is pointer-only.
+- **"Link to…" is Ctrl/Cmd-K only** — no visible UI affordance for
+  wrapping a selection as a link yet (requirements ask for one; add a
+  small control when the editor grows any chrome).
 - **True OS windows** — per `IOX_PLAN.md`, separate OS-level windows
   should use `window.open()` against the same origin, not this layer.

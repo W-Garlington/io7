@@ -274,3 +274,57 @@ doc-editor .cm-activeLine { background: transparent !important; }
 doc-editor .cm-cursor { border-left-color: var(--text) !important; }
 doc-editor .cm-selectionBackground,
 doc-editor .cm-editor ::selection { background: rgba(108, 158, 248, 0.3) !important; }
+
+/* --- wiki links (doc-editor) --- */
+
+/* Rendered link pill (cursor elsewhere). Unresolved/ambiguous variants
+   stay visibly different so broken links are never silent. */
+doc-editor .io7-link {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(108, 158, 248, 0.45);
+  cursor: pointer;
+}
+doc-editor .io7-link:hover { border-bottom-style: double; }
+doc-editor .io7-link--unresolved {
+  color: var(--text-dim);
+  border-bottom: 1px dashed var(--text-dim);
+}
+doc-editor .io7-link--ambiguous {
+  color: #e5c07b;
+  border-bottom: 1px dashed #e5c07b;
+}
+
+/* Raw [[syntax]] while the cursor is inside the link. */
+doc-editor .io7-link-src {
+  background: rgba(108, 158, 248, 0.12);
+  border-radius: 3px;
+}
+
+/* Block-id pin markers (" ^a3f91c2b") — metadata, dimmed but visible. */
+doc-editor .io7-pin {
+  color: var(--text-dim);
+  opacity: 0.55;
+  font-size: 0.8em;
+}
+
+/* CM tooltips (autocomplete, hover preview) ship a light theme; match
+   the shell. Same !important reasoning as the editor recolor above. */
+.cm-tooltip {
+  background: var(--bg-panel) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  border-radius: 6px;
+}
+.cm-tooltip-autocomplete ul li[aria-selected] {
+  background: var(--bg-hover) !important;
+  color: var(--text) !important;
+}
+.cm-tooltip .io7-link-preview {
+  max-width: 26rem;
+  max-height: 16rem;
+  overflow: hidden;
+  padding: 0.5rem 0.6rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  white-space: pre-wrap;
+}

@@ -19,3 +19,4 @@ export const getDoc = (id) => request('GET', `/api/docs/${id}`);
 export const createDoc = (title, content) => request('POST', '/api/docs', { title, content });
 export const updateDoc = (id, title, content) => request('PUT', `/api/docs/${id}`, { title, content });
 export const deleteDoc = (id) => request('DELETE', `/api/docs/${id}`);
+export const refTypes = () => request('GET', '/api/reftypes');
