@@ -39,7 +39,12 @@ Suggested order: graph DB binding → backend skeleton → frontend skeleton →
 
 ## 5. References system
 
-- [ ] Cross-document references: wiki-style `[[links]]`, linked words, user-typed relationships, block-level anchoring, backlinks widget. Full requirements, decided architecture, and 4-phase implementation plan live in `docs/references.md` — read that first; it supersedes the plain `LINKS_TO` edge from `IOX_PLAN.md`.
+Cross-document references: wiki-style `[[links]]`, linked words, user-typed relationships, block-level anchoring, backlinks widget. Full requirements, decided architecture, and 4-phase implementation plan live in `docs/references.md` — read that first; it supersedes the plain `LINKS_TO` edge from `IOX_PLAN.md`.
+
+- [x] Phase 1 — backend: block index, typed `REFERENCES` edges, link grammar + fixtures, rename propagation, late resolution, `/references` + `/reftypes` endpoints, `refs.updated` WS event.
+- [x] Phase 2 — editor: link pills + autocomplete + Ctrl-K linked words + click-nav + hover preview; CM6 bundle re-vendored with the needed exports (recipe in `docs/widgets.md`). Gap: no visible "link to…" UI affordance yet (Ctrl-K only).
+- [ ] Phase 3 — backlinks widget (`<back-links>`: typed grouping, context snippets, tracks focused editor window, live `refs.updated`).
+- [ ] Phase 4 — block-targeting polish (`#^` picker, scroll-to-block, pin-marker UX).
 
 ## 6. Cleanup / decommission
 
