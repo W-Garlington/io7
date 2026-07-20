@@ -37,7 +37,11 @@ Suggested order: graph DB binding → backend skeleton → frontend skeleton →
 - [ ] Graph view widget — this is the payoff of having a real graph DB; a Cypher query for backlinks/tags feeding some minimal force-directed or list-based visualization. Keep the first version simple (e.g. a backlinks list) before attempting a visual graph render.
 - [ ] Search widget.
 
-## 5. Cleanup / decommission
+## 5. References system
+
+- [ ] Cross-document references: wiki-style `[[links]]`, linked words, user-typed relationships, block-level anchoring, backlinks widget. Full requirements, decided architecture, and 4-phase implementation plan live in `docs/references.md` — read that first; it supersedes the plain `LINKS_TO` edge from `IOX_PLAN.md`.
+
+## 6. Cleanup / decommission
 
 - [ ] Once the web frontend reaches parity with the current Fyne UI: remove `frontend/app.go`, `frontend/layout.go`, and the Fyne-related `go.mod` entries (`fyne.io/*`, `github.com/go-gl/*`, `github.com/fyne-io/*`, etc.). Don't remove before parity — `main.go` now starts the web server, but the Fyne packages stay in-tree (and in `go.mod`) until then.
 - [ ] Re-run `govulncheck ./...` once the new deps (cgo binding, WS lib, fsnotify) are in place. One known, currently-unreached vuln to revisit: `github.com/yuin/goldmark` XSS (GO-2026-5320, fixed in v1.7.17) — only matters if the frontend ends up rendering markdown through it.
