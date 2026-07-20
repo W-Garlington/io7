@@ -19,7 +19,7 @@ func openTestStore(t *testing.T) *Store {
 func TestDocumentCRUD(t *testing.T) {
 	s := openTestStore(t)
 
-	created, err := s.CreateDocument("First", "hello world")
+	created, _, err := s.CreateDocument("First", "hello world")
 	if err != nil {
 		t.Fatalf("CreateDocument: %v", err)
 	}
@@ -38,10 +38,11 @@ func TestDocumentCRUD(t *testing.T) {
 		t.Errorf("GetDocument = %#v, want %#v", got, created)
 	}
 
-	updated, err := s.UpdateDocument(created.ID, "Renamed", "new content")
+	res, err := s.UpdateDocument(created.ID, "Renamed", "new content")
 	if err != nil {
 		t.Fatalf("UpdateDocument: %v", err)
 	}
+	updated := res.Doc
 	if updated.Title != "Renamed" || updated.Content != "new content" {
 		t.Errorf("unexpected updated doc: %#v", updated)
 	}
@@ -60,7 +61,7 @@ func TestDocumentCRUD(t *testing.T) {
 		t.Errorf("list should not include content, got %q", docs[0].Content)
 	}
 
-	if err := s.DeleteDocument(created.ID); err != nil {
+	if _, err := s.DeleteDocument(created.ID); err != nil {
 		t.Fatalf("DeleteDocument: %v", err)
 	}
 	if _, err := s.GetDocument(created.ID); !errors.Is(err, ErrNotFound) {
@@ -77,7 +78,7 @@ func TestNotFound(t *testing.T) {
 	if _, err := s.UpdateDocument("nope", "t", "c"); !errors.Is(err, ErrNotFound) {
 		t.Errorf("UpdateDocument = %v, want ErrNotFound", err)
 	}
-	if err := s.DeleteDocument("nope"); !errors.Is(err, ErrNotFound) {
+	if _, err := s.DeleteDocument("nope"); !errors.Is(err, ErrNotFound) {
 		t.Errorf("DeleteDocument = %v, want ErrNotFound", err)
 	}
 }
@@ -88,7 +89,7 @@ func TestSchemaIsIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("first Open: %v", err)
 	}
-	if _, err := s.CreateDocument("persists", "body"); err != nil {
+	if _, _, err := s.CreateDocument("persists", "body"); err != nil {
 		t.Fatalf("CreateDocument: %v", err)
 	}
 	s.Close()

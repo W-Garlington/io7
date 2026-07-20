@@ -1,0 +1,88 @@
+[
+  {
+    "name": "plain link",
+    "input": "see [[Neural Nets]] for context",
+    "links": [
+      {"raw": "[[Neural Nets]]", "type": "links", "target": "Neural Nets", "block": "", "display": ""}
+    ]
+  },
+  {
+    "name": "display alias",
+    "input": "as [[Neural Nets|these results]] show",
+    "links": [
+      {"raw": "[[Neural Nets|these results]]", "type": "links", "target": "Neural Nets", "block": "", "display": "these results"}
+    ]
+  },
+  {
+    "name": "typed link",
+    "input": "[[supports::Neural Nets]]",
+    "links": [
+      {"raw": "[[supports::Neural Nets]]", "type": "supports", "target": "Neural Nets", "block": "", "display": ""}
+    ]
+  },
+  {
+    "name": "typed link with alias",
+    "input": "[[contradicts::Neural Nets|but see]]",
+    "links": [
+      {"raw": "[[contradicts::Neural Nets|but see]]", "type": "contradicts", "target": "Neural Nets", "block": "", "display": "but see"}
+    ]
+  },
+  {
+    "name": "block target",
+    "input": "[[Neural Nets#^a3f91c2b]]",
+    "links": [
+      {"raw": "[[Neural Nets#^a3f91c2b]]", "type": "links", "target": "Neural Nets", "block": "a3f91c2b", "display": ""}
+    ]
+  },
+  {
+    "name": "everything at once",
+    "input": "x [[defines::Neural Nets#^a3f91c2b|the definition]] y",
+    "links": [
+      {"raw": "[[defines::Neural Nets#^a3f91c2b|the definition]]", "type": "defines", "target": "Neural Nets", "block": "a3f91c2b", "display": "the definition"}
+    ]
+  },
+  {
+    "name": "two links on one line",
+    "input": "[[A]] then [[B|b]]",
+    "links": [
+      {"raw": "[[A]]", "type": "links", "target": "A", "block": "", "display": ""},
+      {"raw": "[[B|b]]", "type": "links", "target": "B", "block": "", "display": "b"}
+    ]
+  },
+  {
+    "name": "type is lowercased and trimmed",
+    "input": "[[ Supports :: Neural Nets ]]",
+    "links": [
+      {"raw": "[[ Supports :: Neural Nets ]]", "type": "supports", "target": "Neural Nets", "block": "", "display": ""}
+    ]
+  },
+  {
+    "name": "unclosed is not a link",
+    "input": "[[dangling",
+    "links": []
+  },
+  {
+    "name": "empty targets are not links",
+    "input": "[[]] and [[|alias]] and [[supports::]]",
+    "links": []
+  },
+  {
+    "name": "stray brackets reopen the link",
+    "input": "[[a[[B]]",
+    "links": [
+      {"raw": "[[B]]", "type": "links", "target": "B", "block": "", "display": ""}
+    ]
+  },
+  {
+    "name": "newline breaks a link",
+    "input": "[[not\na link]]",
+    "links": []
+  },
+  {
+    "name": "second double-colon belongs to the title",
+    "input": "[[a::b::c]]",
+    "links": [
+      {"raw": "[[a::b::c]]", "type": "a", "target": "b::c", "block": "", "display": ""}
+    ]
+  }
+]

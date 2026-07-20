@@ -42,12 +42,13 @@ func (s *Server) handleCreateDoc(w http.ResponseWriter, r *http.Request) {
 	if req.Title == "" {
 		req.Title = "Untitled"
 	}
-	doc, err := s.store.CreateDocument(req.Title, req.Content)
+	doc, refsChanged, err := s.store.CreateDocument(req.Title, req.Content)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
 	s.hub.broadcast(event{Type: "doc.created", Doc: &doc})
+	s.broadcastRefs(refsChanged)
 	writeJSON(w, http.StatusCreated, doc)
 }
 
@@ -57,23 +58,55 @@ func (s *Server) handleUpdateDoc(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid JSON body", http.StatusBadRequest)
 		return
 	}
-	doc, err := s.store.UpdateDocument(r.PathValue("id"), req.Title, req.Content)
+	res, err := s.store.UpdateDocument(r.PathValue("id"), req.Title, req.Content)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
-	s.hub.broadcast(event{Type: "doc.updated", Doc: &doc})
-	writeJSON(w, http.StatusOK, doc)
+	s.hub.broadcast(event{Type: "doc.updated", Doc: &res.Doc})
+	for i := range res.Rewritten { // rename propagation touched other docs
+		s.hub.broadcast(event{Type: "doc.updated", Doc: &res.Rewritten[i]})
+	}
+	s.broadcastRefs(res.RefsChanged)
+	writeJSON(w, http.StatusOK, res.Doc)
 }
 
 func (s *Server) handleDeleteDoc(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	if err := s.store.DeleteDocument(id); err != nil {
+	refsChanged, err := s.store.DeleteDocument(id)
+	if err != nil {
 		writeError(w, err)
 		return
 	}
 	s.hub.broadcast(event{Type: "doc.deleted", ID: id})
+	s.broadcastRefs(refsChanged)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) handleDocReferences(w http.ResponseWriter, r *http.Request) {
+	refs, err := s.store.References(r.PathValue("id"))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, refs)
+}
+
+func (s *Server) handleRefTypes(w http.ResponseWriter, r *http.Request) {
+	types, err := s.store.RefTypes()
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, types)
+}
+
+// broadcastRefs emits refs.updated for every document whose reference
+// set changed, so backlinks views refresh in all tabs.
+func (s *Server) broadcastRefs(ids []string) {
+	for _, id := range ids {
+		s.hub.broadcast(event{Type: "refs.updated", ID: id})
+	}
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

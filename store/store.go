@@ -15,18 +15,25 @@ import (
 // ErrNotFound is returned when a requested node does not exist.
 var ErrNotFound = errors.New("not found")
 
-// schema is the full property-graph shape. Only Document is exercised by
-// the current CRUD surface; Folder/Tag and the edges are defined now so
-// later features (folders, backlinks, tagging) extend data, not schema.
+// schema is the full property-graph shape. Document/Block/REFERENCES carry
+// the references system (docs/references.md); Folder/Tag and their edges
+// are defined now so later features (folders, tagging) extend data, not
+// schema.
 var schema = []string{
 	`CREATE NODE TABLE IF NOT EXISTS Document(
 		id STRING PRIMARY KEY, title STRING, content STRING,
 		createdAt TIMESTAMP, updatedAt TIMESTAMP)`,
+	`CREATE NODE TABLE IF NOT EXISTS Block(id STRING PRIMARY KEY, text STRING, ord INT64)`,
 	`CREATE NODE TABLE IF NOT EXISTS Folder(id STRING PRIMARY KEY, name STRING)`,
 	`CREATE NODE TABLE IF NOT EXISTS Tag(id STRING PRIMARY KEY, name STRING)`,
+	`CREATE REL TABLE IF NOT EXISTS HAS_BLOCK(FROM Document TO Block)`,
 	`CREATE REL TABLE IF NOT EXISTS CONTAINS(FROM Folder TO Document, FROM Folder TO Folder)`,
-	`CREATE REL TABLE IF NOT EXISTS LINKS_TO(FROM Document TO Document)`,
+	`CREATE REL TABLE IF NOT EXISTS REFERENCES(FROM Block TO Document, FROM Block TO Block,
+		type STRING, display STRING)`,
 	`CREATE REL TABLE IF NOT EXISTS TAGGED(FROM Document TO Tag)`,
+	// LINKS_TO predates the references system and was never written to;
+	// REFERENCES (block-anchored, typed) replaces it.
+	`DROP TABLE IF EXISTS LINKS_TO`,
 }
 
 // Store wraps an open graph database with io7's schema applied.
@@ -46,7 +53,14 @@ func Open(path string) (*Store, error) {
 			return nil, fmt.Errorf("store: applying schema: %w", err)
 		}
 	}
-	return &Store{db: db}, nil
+	s := &Store{db: db}
+	// The reference index (blocks + edges) is derived from content, so a
+	// full rebuild on open keeps it self-healing (docs/references.md).
+	if err := s.ReindexAll(); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("store: rebuilding reference index: %w", err)
+	}
+	return s, nil
 }
 
 // Close closes the underlying database.

@@ -90,6 +90,38 @@ func TestDocsAPI(t *testing.T) {
 	doJSON(t, "GET", ts.URL+"/api/docs/"+created.ID, nil, http.StatusNotFound, nil)
 }
 
+func TestReferencesAPI(t *testing.T) {
+	ts := newTestServer(t)
+
+	var target, src store.Document
+	doJSON(t, "POST", ts.URL+"/api/docs",
+		map[string]string{"title": "Target", "content": "the target"},
+		http.StatusCreated, &target)
+	doJSON(t, "POST", ts.URL+"/api/docs",
+		map[string]string{"title": "Source", "content": "see [[supports::Target]]"},
+		http.StatusCreated, &src)
+
+	var refs store.DocReferences
+	doJSON(t, "GET", ts.URL+"/api/docs/"+target.ID+"/references", nil, http.StatusOK, &refs)
+	if len(refs.Incoming) != 1 || refs.Incoming[0].DocID != src.ID ||
+		refs.Incoming[0].Type != "supports" {
+		t.Errorf("unexpected incoming refs: %#v", refs.Incoming)
+	}
+	doJSON(t, "GET", ts.URL+"/api/docs/nope/references", nil, http.StatusNotFound, nil)
+
+	var types []string
+	doJSON(t, "GET", ts.URL+"/api/reftypes", nil, http.StatusOK, &types)
+	found := false
+	for _, tp := range types {
+		if tp == "supports" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("reftypes %v missing %q", types, "supports")
+	}
+}
+
 func TestFrontendServed(t *testing.T) {
 	ts := newTestServer(t)
 	res, err := http.Get(ts.URL + "/")

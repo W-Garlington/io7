@@ -38,6 +38,8 @@ func New(st *store.Store, shutdown context.CancelFunc) *Server {
 	s.mux.HandleFunc("GET /api/docs/{id}", s.handleGetDoc)
 	s.mux.HandleFunc("PUT /api/docs/{id}", s.handleUpdateDoc)
 	s.mux.HandleFunc("DELETE /api/docs/{id}", s.handleDeleteDoc)
+	s.mux.HandleFunc("GET /api/docs/{id}/references", s.handleDocReferences)
+	s.mux.HandleFunc("GET /api/reftypes", s.handleRefTypes)
 	s.mux.HandleFunc("GET /ws", s.handleWS)
 	s.mux.HandleFunc("POST /shutdown", s.handleShutdown)
 	s.mux.Handle("GET /", http.FileServerFS(web.Assets))
